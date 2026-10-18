@@ -31,13 +31,16 @@ class Adidas:
             current_price_raw = current_price_tag.text.strip() if current_price_tag else old_price_raw
             atag = item.find('a', class_='product__info')
             url_path = atag.get('href', '')
+            url_path = 'https://www.adidas.ua' + url_path
             sku = self.extract_sku(url_path)
             list_item = {
-                'Model': name,
-                'Href': url_path,
-                'Sku': sku,
-                'Raw_Price': int(re.sub(r"\D", "", current_price_raw)),
-                'Raw_Old_Price': int(re.sub(r"\D", "", old_price_raw)) 
+                'brand': 'Adidas',
+                'model_name': name,
+                'sku': sku,
+                'marketplace': 'adidas.ua',
+                'url': url_path,
+                'price': int(re.sub(r"\D", "", current_price_raw)),
+                'old_price': int(re.sub(r"\D", "", old_price_raw)) 
             }
             list.append(list_item)
 
@@ -69,8 +72,20 @@ class Adidas:
                     next_btn.click()
                     try:
                         current_products.first.wait_for(state="visible", timeout=10000)
-                        page.wait_for_function("([selector, oldText]) => document.querySelector(selector).innerText !== oldText",
-                        arg=[product_selector, first_product_text_before], timeout=10000)
+                        safe_wait_func = """
+                            ([selector, oldText]) => {
+                            const el = document.querySelector(selector);
+                            return el ? el.innerText !== oldText : false;
+                        }
+                        """
+
+                        page.wait_for_function(
+                            safe_wait_func, 
+                            arg=[product_selector, first_product_text_before], 
+                            timeout=10000
+                        )
+                        #page.wait_for_function("([selector, oldText]) => document.querySelector(selector).innerText !== oldText",
+                        #arg=[product_selector, first_product_text_before], timeout=10000)
                     except Exception as e:
                         print(e)
                         break

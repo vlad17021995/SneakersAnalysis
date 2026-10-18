@@ -10,6 +10,41 @@ class ArenaStore:
     def __init__(self):
         pass
 
+    LINE_TO_BRAND_MAP = {
+        # SAUCONY
+        "endorphin": "SAUCONY",
+        "kinvara": "SAUCONY",
+        "triumph": "SAUCONY",
+        "peregrine": "SAUCONY",
+        "jazz": "SAUCONY",
+        
+        # HOKA
+        "clifton": "HOKA",
+        "bondi": "HOKA",
+        "speedgoat": "HOKA",
+        "mach": "HOKA",
+        
+        # NIKE
+        "pegasus": "NIKE",
+        "alphafly": "NIKE",
+        "vaporfly": "NIKE",
+        "invincible": "NIKE",
+        
+        # ADIDAS
+        "supernova": "ADIDAS",
+        "ultraboost": "ADIDAS",
+        "adizero": "ADIDAS"
+    }
+
+    def detect_brand_intelligently(self, title_text: str, source_site: str) -> str:
+        title_lower = title_text.lower()
+        for line, brand in self.LINE_TO_BRAND_MAP.items():
+            if line in title_lower:
+                return brand    
+        if source_site.lower() == "arenastore.com.ua":
+            return "SAUCONY"
+        return "UNKNOWN"
+
     def extract_sku(self, title_text: str) -> str:
         if not title_text:
             return 'None'
@@ -76,12 +111,15 @@ class ArenaStore:
                 else:
                     current_price_raw = both_prices_tag.get_text()
                     old_price_raw = current_price_raw
+                brand = self.detect_brand_intelligently(name, 'arenastore.com.ua')
                 list_item = {
-                    'Model': name,
-                    'Href': href,
-                    'Sku': sku,
-                    'Raw_Price': int(re.sub(r"\D", "", current_price_raw)),
-                    'Raw_Old_Price': int(re.sub(r"\D", "", old_price_raw))
+                    'brand': brand,
+                    'model_name': name,
+                    'sku': sku,
+                    'marketplace': 'arenastore.com.ua',
+                    'url': href,
+                    'price': int(re.sub(r"\D", "", current_price_raw)),
+                    'old_price': int(re.sub(r"\D", "", old_price_raw))
                 }
                 list_result.append(list_item)
             except Exception as error:

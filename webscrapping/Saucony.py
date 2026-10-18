@@ -75,11 +75,13 @@ class Saucony:
                     current_price_raw = both_prices_tag.get_text()
                     old_price_raw = current_price_raw
                 list_item = {
-                    'Model': name,
-                    'Href': href,
-                    'Sku': sku,
-                    'Raw_Price': int(re.sub(r"\D", "", current_price_raw)),
-                    'Raw_Old_Price': int(re.sub(r"\D", "", old_price_raw)) 
+                    'brand': 'Saucony',
+                    'model_name': name,
+                    'sku': sku,
+                    'marketplace': 'saucony.kiev.ua',
+                    'url': href,
+                    'price': int(re.sub(r"\D", "", current_price_raw)),
+                    'old_price': int(re.sub(r"\D", "", old_price_raw)) 
                 }
                 list_result.append(list_item)
             except Exception as error:

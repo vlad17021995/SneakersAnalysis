@@ -62,17 +62,25 @@ class Puma:
                 Sku = item.get('data-product-sku')
                 item_tag = item.find('div', class_='product-item__info')
                 name_tag = item_tag.find('a', class_='product-item__name')
-                name = name_tag.text.strip() if name_tag else "Unkown Puma Model"
+                if name_tag:
+                    name = name_tag.text.strip()
+                    url = name_tag.get('href')
+                else:
+                    name = "Unkown Puma Model"
+                    url = ""
                 both_prices_tag = item_tag.find('div', class_='product-item__price')
                 price_tag = both_prices_tag.find('span', class_='special-price').find('span', 'price-wrapper')
                 price_text = price_tag.get('data-price-amount') if price_tag else '0'
                 old_price_tag = both_prices_tag.find('span', class_='old-price').find('span', 'price-wrapper')
                 old_price_text = old_price_tag.get('data-price-amount') if old_price_tag else '0'
                 list_item = {
-                    'Model': name,
-                    'Sku': Sku,
-                    'Raw_Price': price_text,
-                    'Raw_Old_Price': old_price_text
+                    'brand': 'Puma',
+                    'model_name': name,
+                    'sku': Sku,
+                    'marketplace': 'puma.ua',
+                    'url': url,
+                    'price': price_text,
+                    'old_price': old_price_text
                 }
                 list_result.append(list_item)
             except Exception:

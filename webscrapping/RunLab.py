@@ -7,21 +7,72 @@ import pandas as pd
 import re
 
 class RunLab:
+    VALID_BRANDS = {
+        "NIKE", "ADIDAS", "ASICS", "PUMA", "SAUCONY", 
+        "HOKA", "MIZUNO", "MERRELL", "ON", "UNDER ARMOUR", "NEW BALANCE"
+    }
+    
     def __init__(self):
         pass
 
-    def extract_sku(self, title_text: str) -> str:
+    def extract_brand_by_position(self, title_text: str, sku_text: str) -> str:
         if not title_text:
+            return "UNKNOWN"
+        title = " ".join(title_text.split())
+        sku_lower = sku_text.lower().strip() if sku_text else ""
+        pattern = r"(?i)\bкросівки\s+([a-zа-яієїґ0-9-]+)(?:\s+([a-zа-яієїґ0-9-]+))?"
+        match = re.search(pattern, title)
+        potential_brand_word = None
+
+        if match:
+            word1 = match.group(1).upper()
+            word2 = match.group(2).upper() if match.group(2) else ""
+            if word1 in ["NEW", "ON", "UNDER"] and word2 in ["BALANCE", "RUNNING", "ARMOUR"]:
+                detected_double = f"{word1} {word2}"
+                if word1 == "ON" and word2 == "RUNNING":
+                    detected_double = "ON"
+                if detected_double in self.VALID_BRANDS:
+                    return detected_double
+            if word1 in self.VALID_BRANDS:
+                return word1
+
+            potential_brand_word = word1
+
+            if re.match(r'^s[0-9]+', sku_lower):
+                return "SAUCONY"
+
+            if re.match(r'^[0-9]{7}', sku_lower):
+                return "HOKA"
+            
+            if re.match(r'^[a-z]{1,2}[0-9]{4,5}', sku_lower):
+                return "ADIDAS"
+            
+            if re.match(r'^[0-9]{6}', sku_lower):
+                return "PUMA"
+            
+            if potential_brand_word and potential_brand_word not in ["ENDORPHIN", "CLIFTON", "PEGASUS"]:
+                return potential_brand_word
+        return "UNKNOWN"
+
+    def extract_sku(self, url_path: str, image_src: str = "") -> str:
+        if not url_path:
             return 'None'
-        # https://runlab.com.ua/cholovichi_krosivki_saucony_triumph_23_s21023-215
-        # s21023-215
-        url = title_text.strip().lower()
+        url = url_path.strip().lower()
         url = re.sub(r'\.html\b|\/$', '', url)
-        url_parts = url.split('_')
-        if len(url_parts) > 1:
-            potential_sku = url_parts[-1].upper()
-            if any(char.isdigit() for char in potential_sku):
-                return potential_sku
+    
+        if "product_id" not in url:
+            url_parts = url.split('_')
+            if len(url_parts) > 1:
+                potential_sku = url_parts[-1].upper()
+                if any(char.isdigit() for char in potential_sku):
+                    return potential_sku
+        if image_src:
+            image_src_lower = image_src.lower()
+            image_pattern = r'([a-z0-9]{5,7}-[a-z0-9]{2,3})'
+            match = re.search(image_pattern, image_src_lower)
+            if match:
+                clean_sku = match.group(1).strip('.').upper()
+                return clean_sku
         return 'None'
 
     def check_adv(self, page_):
@@ -65,12 +116,14 @@ class RunLab:
         list_result = []
         for item in products:
             item_tag = item.find('div', class_='product-inner')
+            image_tag = item.find('div', class_='image')
+            image_src = image_tag.find('a').find('img').get('src', '')
             try:
                 name_tag = item_tag.find('h2', class_='product-name').find('a')
                 if name_tag:
                     name = name_tag.text.strip()
                     href = name_tag.get('href', '')
-                    sku = self.extract_sku(href)
+                    sku = self.extract_sku(href, image_src)
                 else:
                     name = "Unkown Model"
                     href = ""
@@ -86,12 +139,16 @@ class RunLab:
                 else:
                     current_price_raw = both_prices_tag.get_text()
                     old_price_raw = current_price_raw
+                brand = self.extract_brand_by_position(name, sku)
+
                 list_item = {
-                    'Model': name,
-                    'Href': href,
-                    'Sku': sku,
-                    'Raw_Price': int(re.sub(r"\D", "", current_price_raw)),
-                    'Raw_Old_Price': int(re.sub(r"\D", "", old_price_raw))
+                    'brand': brand,
+                    'model_name': name,
+                    'sku': sku,
+                    'marketplace': 'runlab.com.ua',
+                    'url': href,
+                    'price': int(re.sub(r"\D", "", current_price_raw)),
+                    'old_price': int(re.sub(r"\D", "", old_price_raw))
                 }
                 list_result.append(list_item)
             except Exception as error:

@@ -44,6 +44,7 @@ class NewBalance:
                 brand = item.get('data-brand')
                 name = item.get('data-name')
                 Sku = item.get('data-product-id')
+                url_path = item.find('div', class_='products__hover').find('a').get('href')
                 prices = item.find('div', class_='prices')
                 all_prices = prices.find_all('span', class_='prices__price')
                 current_price_raw = 0
@@ -55,10 +56,13 @@ class NewBalance:
                     current_price_raw = prices.find('span', class_='prices__price_discount').text.strip()
                     old_price_raw = prices.find('span', class_='prices__price_old').text.strip()
                 list_item = {
-                    'Model': brand + ' ' + name,
-                    'Sku': Sku,
-                    'Raw_Price': int(re.sub(r"\D", "", current_price_raw)),
-                    'Raw_Old_Price': int(re.sub(r"\D", "", old_price_raw)) 
+                    'brand': 'NewBalance',
+                    'model_name': name,
+                    'sku': Sku,
+                    'marketplace': 'newbalance.ua',
+                    'url': url_path,
+                    'price': int(re.sub(r"\D", "", current_price_raw)),
+                    'old_price': int(re.sub(r"\D", "", old_price_raw)) 
                 }
                 list_result.append(list_item)
             except Exception as error:

@@ -61,13 +61,16 @@ class Epicentr:
         return list_result
 
     def search_model(self, req, list_result, page):
+        brand = req.split()[0]
         target_url = "https://epicentrk.ua/ua/search/?q=" + req + "&SECTION_ID=5419"
         if req == "New Balance":
             target_url = "https://epicentrk.ua/ua/shop/krosivky/fs/brend-new-balance/pryznachennia-dlia-bihu/"
+            brand = req
         if req == "Hoka":
             target_url = "https://epicentrk.ua/ua/brands/hoka.html?SECTION_ID=5419"
         if req == "On Running":
             target_url = "https://epicentrk.ua/ua/shop/krosivky/fs/brend-on/"
+            brand = req
         product_selector = "._7d58lFfz"
         page_control_selector = "._A1s-wYY9"
         page.goto(target_url)
@@ -78,8 +81,8 @@ class Epicentr:
             initial_count = current_products.count()
             last_product = current_products.last
             html_content = page.content()
-            self.fill_out_list(html_content, list_result)
-            last_product.scroll_into_view_if_needed()
+            self.fill_out_list(html_content, list_result, brand)
+            #last_product.scroll_into_view_if_needed()
             if not last_product.get_attribute("itemscope"):
                 break
             controls = page.locator(page_control_selector)
@@ -91,7 +94,7 @@ class Epicentr:
             else:
                 break
         
-    def fill_out_list(self, content, list_result):
+    def fill_out_list(self, content, list_result, brand):
         soup = BeautifulSoup(content, 'html.parser')
         products = soup.find_all('div', class_='_BiSUwK5l')
         for item in products:
@@ -110,20 +113,23 @@ class Epicentr:
                     url_path = ''
                     full_title = ''
                     sku = ''
+                url_path = 'https://epicentrk.ua' + url_path
                 both_prices_tag = item.find('div', class_='_hFNrWMyR')
                 current_price_raw = 0 
                 old_price_raw = 0
-                if not both_prices_tag.find('div', class_='_oUaq5aIu'):
-                    current_price_raw = old_price_raw = both_prices_tag.find('div', class_='_Al-5uY1o').find('data').find('data').get_text()
+                if not both_prices_tag.find('div', class_='_Al-5uY1o'):
+                    current_price_raw = old_price_raw = both_prices_tag.find('div', class_='_oUaq5aIu').find('s').find('data').get_text()
                 else:
-                    current_price_raw = both_prices_tag.find('div', class_='_oUaq5aIu').find('s').find('data').get_text()
-                    old_price_raw = both_prices_tag.find('div', class_='_Al-5uY1o').find('data').find('data').get_text()
+                    old_price_raw = both_prices_tag.find('div', class_='_oUaq5aIu').find('s').find('data').get_text()
+                    current_price_raw = both_prices_tag.find('div', class_='_Al-5uY1o').find('data').find('data').get_text()
                 list_item = {
-                    'Model': name,
-                    'Title': full_title,
-                    'Sku': sku,
-                    'Raw_Price': int(re.sub(r"\D", "", current_price_raw)),
-                    'Raw_Old_Price': int(re.sub(r"\D", "", old_price_raw)) 
+                    'brand': brand,
+                    'model_name': name,
+                    'sku': sku,
+                    'marketplace': 'epicentrk.ua',
+                    'url': url_path,
+                    'price': int(re.sub(r"\D", "", current_price_raw)),
+                    'old_price': int(re.sub(r"\D", "", old_price_raw)) 
                 }
                 print(list_item)
                 list_result.append(list_item)
